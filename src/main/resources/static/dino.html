@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dino Run - Khủng Long Nhảy</title>
+    <style>
+        body {
+            background-color: #f7f1e3;
+            /* Màu nền sáng hơn kiểu sa mạc */
+            color: #333;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        canvas {
+            border-bottom: 3px solid #333;
+            /* Mặt đất */
+            background-color: transparent;
+        }
+
+        #scoreBoard {
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="scoreBoard">Điểm: 0</div>
+
+    <canvas id="gameCanvas" width="600" height="200"></canvas>
+
+    <p>Nhấn phím <b>SPACE (Cách)</b> hoặc chạm màn hình để nhảy</p>
+    <a href="/" class="btn">⬅️ Quay lại Sảnh</a>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // --- Biến Game ---
+        let score = 0;
+        let gameSpeed = 5;
+        let gravity = 0.6;
+        let isGameOver = false;
+
+        // Khủng long
+        let dino = {
+            x: 50,
+            y: 150,
+            width: 30,
+            height: 30,
+            dy: 0, // Vận tốc dọc
+            jumpPower: -10,
+            grounded: true
+        };
+
+        // Chướng ngại vật (Cây xương rồng)
+        let cactus = {
+            x: 600,
+            y: 150, // Cùng độ cao với dino
+            width: 20,
+            height: 30
+        };
+
+        // Bắt sự kiện nhảy
+        document.addEventListener("keydown", function (event) {
+            if (event.code === "Space" && dino.grounded) {
+                jump();
+            }
+        });
+        document.addEventListener("touchstart", function () {
+            if (dino.grounded) jump();
+        });
+
+        function jump() {
+            dino.dy = dino.jumpPower;
+            dino.grounded = false;
+        }
+
+        // --- VÒNG LẶP GAME ---
+        function update() {
+            if (isGameOver) return;
+
+            requestAnimationFrame(update);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Xử lý Khủng long
+            dino.dy += gravity; // Trọng lực kéo xuống
+            dino.y += dino.dy;
+
+            // Chạm đất
+            if (dino.y >= 150) {
+                dino.y = 150;
+                dino.dy = 0;
+                dino.grounded = true;
+            }
+
+            // Vẽ Dino (Màu đen đơn giản)
+            ctx.fillStyle = "#333";
+            ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+
+            // 2. Xử lý Xương rồng
+            cactus.x -= gameSpeed; // Di chuyển sang trái
+
+            // Nếu chạy hết màn hình thì quay lại
+            if (cactus.x + cactus.width < 0) {
+                cactus.x = canvas.width + Math.random() * 200; // Xuất hiện ngẫu nhiên xa hơn
+                score += 100; // Qua 1 cây được 100 điểm
+                gameSpeed += 0.2; // Tăng tốc độ dần dần
+                document.getElementById("scoreBoard").innerText = "Điểm: " + score;
+            }
+
+            // Vẽ Xương rồng (Màu đỏ)
+            ctx.fillStyle = "#c0392b";
+            ctx.fillRect(cactus.x, cactus.y, cactus.width, cactus.height);
+
+            // 3. Kiểm tra Va chạm (Chết)
+            if (
+                dino.x < cactus.x + cactus.width &&
+                dino.x + dino.width > cactus.x &&
+                dino.y < cactus.y + cactus.height &&
+                dino.y + dino.height > cactus.y
+            ) {
+                // Va chạm!
+                isGameOver = true;
+                alert("GAME OVER! Điểm của bạn: " + score);
+                sendScoreToBackend(score);
+            }
+        }
+
+        // --- GỬI ĐIỂM VỀ JAVA ---
+        function sendScoreToBackend(finalScore) {
+            let data = {
+                "gameType": "dino",  // Quan trọng: Báo cho Java biết đây là game Dino
+                "score": finalScore,
+                "username": "NguoiChoi_Dino"
+            };
+
+            fetch('/api/game/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+                .then(response => response.text())
+                .then(message => {
+                    alert("Server Java nói: " + message);
+                    location.reload();
+                })
+                .catch((error) => console.error('Lỗi:', error));
+        }
+
+        // Bắt đầu chạy game
+        update();
+
+    </script>
+</body>
+
+</html>

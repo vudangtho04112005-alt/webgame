@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rắn Săn Mồi - Snake Game</title>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        canvas {
+            border: 2px solid #27ae60;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+        }
+
+        #scoreBoard {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #e74c3c;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="scoreBoard">Điểm số: 0</div>
+
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <a href="/" class="btn">⬅️ Quay lại Sảnh</a>
+
+    <script>
+        // --- Cấu hình Game ---
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const box = 20; // Kích thước 1 ô vuông
+        let snake = [];
+        snake[0] = { x: 10 * box, y: 10 * box }; // Vị trí đầu rắn
+
+        let food = {
+            x: Math.floor(Math.random() * 19 + 1) * box,
+            y: Math.floor(Math.random() * 19 + 1) * box
+        };
+
+        let score = 0;
+        let d; // Hướng di chuyển
+
+        // Lắng nghe phím bấm
+        document.addEventListener("keydown", direction);
+
+        function direction(event) {
+            if (event.keyCode == 37 && d != "RIGHT") d = "LEFT";
+            else if (event.keyCode == 38 && d != "DOWN") d = "UP";
+            else if (event.keyCode == 39 && d != "LEFT") d = "RIGHT";
+            else if (event.keyCode == 40 && d != "UP") d = "DOWN";
+        }
+
+        // Hàm kiểm tra va chạm
+        function collision(head, array) {
+            for (let i = 0; i < array.length; i++) {
+                if (head.x == array[i].x && head.y == array[i].y) return true;
+            }
+            return false;
+        }
+
+        // --- VÒNG LẶP GAME (Chạy liên tục) ---
+        function draw() {
+            // Xóa màn hình cũ
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Vẽ Rắn
+            for (let i = 0; i < snake.length; i++) {
+                ctx.fillStyle = (i == 0) ? "#2ecc71" : "white"; // Đầu màu xanh, thân màu trắng
+                ctx.fillRect(snake[i].x, snake[i].y, box, box);
+
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+            }
+
+            // Vẽ Mồi
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
+
+            // Lấy vị trí đầu rắn cũ
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+
+            // Di chuyển
+            if (d == "LEFT") snakeX -= box;
+            if (d == "UP") snakeY -= box;
+            if (d == "RIGHT") snakeX += box;
+            if (d == "DOWN") snakeY += box;
+
+            // Xử lý ăn mồi
+            if (snakeX == food.x && snakeY == food.y) {
+                score += 100; // Cộng 10 điểm
+                document.getElementById("scoreBoard").innerHTML = "Điểm số: " + score;
+                // Tạo mồi mới
+                food = {
+                    x: Math.floor(Math.random() * 19 + 1) * box,
+                    y: Math.floor(Math.random() * 19 + 1) * box
+                };
+            } else {
+                // Nếu không ăn thì xóa đuôi
+                snake.pop();
+            }
+
+            // Xử lý va chạm (Chết)
+            let newHead = { x: snakeX, y: snakeY };
+
+            if (snakeX < 0 || snakeX >= canvas.width || snakeY < 0 || snakeY >= canvas.height || collision(newHead, snake)) {
+                clearInterval(game);
+                alert("GAME OVER! Điểm của bạn: " + score);
+                sendScoreToBackend(score); // Gửi điểm về Java
+                return;
+            }
+
+            snake.unshift(newHead);
+        }
+
+        // --- GỬI ĐIỂM VỀ JAVA (BACKEND) ---
+        function sendScoreToBackend(finalScore) {
+            // Dữ liệu gửi đi
+            let data = {
+                "gameType": "snake",
+                "score": finalScore,
+                "username": "NguoiChoi_Snake" // Sau này sẽ thay bằng tên thật
+            };
+
+            // Gọi API của Java Controller
+            fetch('/api/game/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+                .then(response => response.text())
+                .then(message => {
+                    console.log("Server trả về:", message);
+                    alert("Server Java nói: " + message); // Thông báo kết quả xếp hạng
+                    location.reload(); // Chơi lại
+                })
+                .catch((error) => {
+                    console.error('Lỗi:', error);
+                });
+        }
+
+        // Tốc độ game (100ms vẽ lại 1 lần)
+        let game = setInterval(draw, 200);
+
+    </script>
+</body>
+
+</html>
