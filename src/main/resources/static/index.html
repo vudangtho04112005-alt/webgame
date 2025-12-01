@@ -126,7 +126,32 @@
         // Gọi hàm khi trang vừa tải xong
         loadLeaderboard();
     </script>
+    <div id="userInfo" style="position: absolute; top: 20px; right: 20px; font-weight: bold;"></div>
 
+    <script>
+        // Kiểm tra xem đã đăng nhập chưa
+        fetch('/api/auth/me')
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error("Chưa đăng nhập");
+            })
+            .then(user => {
+                // Đã đăng nhập -> Hiện tên và nút đăng xuất
+                document.getElementById("userInfo").innerHTML =
+                    `Xin chào, <span style="color:#f39c12">${user.username}</span> | 
+                     <a href="#" onclick="logout()" style="color: #e74c3c; text-decoration: none;">Đăng xuất</a>`;
+            })
+            .catch(() => {
+                // Chưa đăng nhập -> Đá về trang login
+                window.location.href = "/login.html";
+            });
+
+        function logout() {
+            fetch('/api/auth/logout').then(() => window.location.reload());
+        }
+
+        // ... (Giữ nguyên code load bảng xếp hạng cũ ở đây) ...
+    </script>
 </body>
 
 </html>

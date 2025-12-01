@@ -6,9 +6,11 @@
     <title>Rắn Săn Mồi - Snake Game</title>
     <style>
         body {
-            background-color: #222;
-            color: white;
-            font-family: sans-serif;
+            background-color: #1a1a1a;
+            /* Màu nền xám đen hiện đại */
+            color: #ecf0f1;
+            font-family: 'Courier New', Courier, monospace;
+            /* Font kiểu máy tính cũ */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,25 +19,39 @@
             margin: 0;
         }
 
+        /* Hiệu ứng màn hình game phát sáng */
         canvas {
-            border: 2px solid #27ae60;
             background-color: #000;
-            box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+            border: 4px solid #333;
+            border-radius: 15px;
+            /* Bo tròn góc màn hình */
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);
+            /* Đổ bóng màu xanh Neon */
         }
 
         #scoreBoard {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 30px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #2ecc71;
+            /* Chữ phát sáng */
         }
 
         .btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #e74c3c;
+            margin-top: 25px;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
             color: white;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 30px;
             font-weight: bold;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.6);
         }
     </style>
 </head>
@@ -85,60 +101,85 @@
 
         // --- VÒNG LẶP GAME (Chạy liên tục) ---
         function draw() {
-            // Xóa màn hình cũ
-            ctx.fillStyle = "#000";
+            // 1. Vẽ nền (Giữ nguyên)
+            ctx.fillStyle = "#0d1117"; // Nền game màu tối hơn chút
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Vẽ Rắn
+            // 2. Vẽ Rắn (NÂNG CẤP: Vẽ hình tròn)
             for (let i = 0; i < snake.length; i++) {
-                ctx.fillStyle = (i == 0) ? "#2ecc71" : "white"; // Đầu màu xanh, thân màu trắng
-                ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                // Màu: Đầu rắn xanh lá sáng, thân xanh đậm hơn
+                ctx.fillStyle = (i == 0) ? "#2ecc71" : "#27ae60";
 
-                ctx.strokeStyle = "black";
-                ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+                // Vẽ hình tròn thay vì hình vuông
+                ctx.beginPath();
+                // Công thức: arc(tâm_x, tâm_y, bán_kính, góc_bắt_đầu, góc_kết_thúc)
+                ctx.arc(snake[i].x + box / 2, snake[i].y + box / 2, box / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Thêm viền mỏng cho dễ nhìn đốt
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.stroke();
+
+                // (Tùy chọn) Vẽ mắt cho đầu rắn
+                if (i == 0) {
+                    ctx.fillStyle = "white";
+                    ctx.beginPath();
+                    // Mắt trái
+                    ctx.arc(snake[i].x + box / 3, snake[i].y + box / 3, 2, 0, Math.PI * 2);
+                    // Mắt phải
+                    ctx.arc(snake[i].x + box - box / 3, snake[i].y + box / 3, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
 
-            // Vẽ Mồi
-            ctx.fillStyle = "red";
-            ctx.fillRect(food.x, food.y, box, box);
+            // 3. Vẽ Mồi (NÂNG CẤP: Hình tròn màu đỏ phát sáng)
+            ctx.fillStyle = "#e74c3c";
+            ctx.shadowBlur = 15; // Tạo hiệu ứng phát sáng cho mồi
+            ctx.shadowColor = "#e74c3c";
 
-            // Lấy vị trí đầu rắn cũ
+            ctx.beginPath();
+            ctx.arc(food.x + box / 2, food.y + box / 2, box / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tắt hiệu ứng bóng đổ để không ảnh hưởng các phần khác
+            ctx.shadowBlur = 0;
+
+            // ... (Phần logic di chuyển bên dưới GIỮ NGUYÊN không đổi) ...
             let snakeX = snake[0].x;
             let snakeY = snake[0].y;
 
-            // Di chuyển
             if (d == "LEFT") snakeX -= box;
             if (d == "UP") snakeY -= box;
             if (d == "RIGHT") snakeX += box;
             if (d == "DOWN") snakeY += box;
 
-            // Xử lý ăn mồi
             if (snakeX == food.x && snakeY == food.y) {
-                score += 100; // Cộng 10 điểm
+                score += 10;
                 document.getElementById("scoreBoard").innerHTML = "Điểm số: " + score;
-                // Tạo mồi mới
                 food = {
                     x: Math.floor(Math.random() * 19 + 1) * box,
                     y: Math.floor(Math.random() * 19 + 1) * box
                 };
             } else {
-                // Nếu không ăn thì xóa đuôi
                 snake.pop();
             }
 
-            // Xử lý va chạm (Chết)
             let newHead = { x: snakeX, y: snakeY };
 
             if (snakeX < 0 || snakeX >= canvas.width || snakeY < 0 || snakeY >= canvas.height || collision(newHead, snake)) {
                 clearInterval(game);
-                alert("GAME OVER! Điểm của bạn: " + score);
-                sendScoreToBackend(score); // Gửi điểm về Java
+
+                // Vẽ chữ Game Over đẹp hơn
+                ctx.fillStyle = "white";
+                ctx.font = "40px Courier New";
+                ctx.fillText("GAME OVER", 80, 200);
+
+                sendScoreToBackend(score);
                 return;
             }
 
             snake.unshift(newHead);
         }
-
         // --- GỬI ĐIỂM VỀ JAVA (BACKEND) ---
         function sendScoreToBackend(finalScore) {
             // Dữ liệu gửi đi

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập - Web Game</title>
+    <style>
+        body {
+            background: #222;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #333;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 300px;
+            text-align: center;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #f39c12;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #e67e22;
+        }
+
+        .toggle {
+            margin-top: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            color: #3498db;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #f39c12;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2 id="formTitle">ĐĂNG NHẬP</h2>
+        <input type="text" id="username" placeholder="Tên đăng nhập">
+        <input type="password" id="password" placeholder="Mật khẩu">
+        <button onclick="submitForm()" id="btnSubmit">Vào Game</button>
+        <div class="toggle" onclick="toggleForm()" id="toggleText">Chưa có tài khoản? Đăng ký ngay</div>
+    </div>
+
+    <script>
+        let isLogin = true;
+
+        function toggleForm() {
+            isLogin = !isLogin;
+            document.getElementById("formTitle").innerText = isLogin ? "ĐĂNG NHẬP" : "ĐĂNG KÝ";
+            document.getElementById("btnSubmit").innerText = isLogin ? "Vào Game" : "Đăng Ký";
+            document.getElementById("toggleText").innerText = isLogin ? "Chưa có tài khoản? Đăng ký ngay" : "Đã có tài khoản? Đăng nhập";
+        }
+
+        async function submitForm() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const url = isLogin ? "/api/auth/login" : "/api/auth/register";
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            const message = await response.text();
+            if (response.ok) {
+                if (isLogin) {
+                    window.location.href = "/"; // Đăng nhập xong chuyển về trang chủ
+                } else {
+                    alert("Đăng ký thành công! Hãy đăng nhập.");
+                    toggleForm(); // Chuyển về form đăng nhập
+                }
+            } else {
+                alert("Lỗi: " + message);
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -26,23 +26,26 @@ public class GameController {
     // Dữ liệu gửi lên (JSON): { "gameType": "snake", "score": 150, "username":
     // "Nam" }
     @PostMapping("/submit")
-    public String submitScore(@RequestBody Map<String, Object> payload) {
-        String gameType = (String) payload.get("gameType");
-        Integer score = (Integer) payload.get("score");
-        String username = (String) payload.get("username");
+    public String submitScore(@RequestBody Map<String, Object> payload, jakarta.servlet.http.HttpSession session) {
+        // 1. Lấy User từ Session (Người đang đăng nhập)
+        User currentUser = (User) session.getAttribute("currentUser");
 
-        // Tạo User giả lập từ dữ liệu gửi lên
-        User user = new User();
-        user.setUsername(username);
-
-        // Logic chọn game (Factory Pattern đơn giản)
-        if ("snake".equalsIgnoreCase(gameType)) {
-            return snakeService.processResult(user, score);
-        } else if ("dino".equalsIgnoreCase(gameType)) {
-            return dinoService.processResult(user, score);
+        // Nếu chưa đăng nhập thì không cho lưu điểm
+        if (currentUser == null) {
+            return "Bạn chưa đăng nhập! Điểm không được lưu.";
         }
 
-        return "Lỗi: Không tìm thấy game này!";
+        String gameType = (String) payload.get("gameType");
+        Integer score = (Integer) payload.get("score");
+
+        // 2. Gọi Service xử lý (Lúc này truyền currentUser thật vào)
+        if ("snake".equalsIgnoreCase(gameType)) {
+            return snakeService.processResult(currentUser, score);
+        } else if ("dino".equalsIgnoreCase(gameType)) {
+            return dinoService.processResult(currentUser, score);
+        }
+
+        return "Không tìm thấy game!";
     }
 
     // --- Thêm đoạn này ---

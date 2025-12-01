@@ -3,172 +3,226 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Dino Run - Khủng Long Nhảy</title>
+    <title>Dino Run - Google Style</title>
     <style>
+        /* Phong cách Google Chrome Offline */
         body {
-            background-color: #f7f1e3;
-            /* Màu nền sáng hơn kiểu sa mạc */
-            color: #333;
-            font-family: sans-serif;
+            background-color: #f7f7f7;
+            color: #535353;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+            margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            margin: 0;
         }
 
         canvas {
-            border-bottom: 3px solid #333;
+            border-bottom: 2px solid #535353;
             /* Mặt đất */
-            background-color: transparent;
+            background: transparent;
         }
 
         #scoreBoard {
             font-size: 24px;
-            margin-bottom: 10px;
             font-weight: bold;
+            color: #535353;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
         }
 
         .btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #333;
-            color: white;
+            margin-top: 30px;
+            padding: 10px 25px;
+            background: transparent;
+            color: #535353;
+            border: 2px solid #535353;
+            border-radius: 4px;
             text-decoration: none;
-            border-radius: 5px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #535353;
+            color: white;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="scoreBoard">Điểm: 0</div>
+    <div id="scoreBoard">HI 00000</div>
+    <canvas id="gameCanvas" width="600" height="150"></canvas>
 
-    <canvas id="gameCanvas" width="600" height="200"></canvas>
-
-    <p>Nhấn phím <b>SPACE (Cách)</b> hoặc chạm màn hình để nhảy</p>
-    <a href="/" class="btn">⬅️ Quay lại Sảnh</a>
+    <p style="color: #999; font-size: 14px; margin-top: 10px;">Nhấn <b>SPACE</b> hoặc <b>↑</b> để nhảy</p>
+    <a href="/" class="btn">QUAY LẠI</a>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // --- Biến Game ---
         let score = 0;
-        let gameSpeed = 5;
+        let gameSpeed = 6;
         let gravity = 0.6;
         let isGameOver = false;
+        let frame = 0; // Biến đếm để tạo hiệu ứng chạy
 
-        // Khủng long
         let dino = {
             x: 50,
-            y: 150,
-            width: 30,
-            height: 30,
-            dy: 0, // Vận tốc dọc
-            jumpPower: -10,
-            grounded: true
+            y: 110, // Mặt đất ở y=110
+            width: 40,
+            height: 43,
+            dy: 0,
+            jumpPower: -12,
+            grounded: true,
+            legFrame: 0 // 0: Chân trước, 1: Chân sau
         };
 
-        // Chướng ngại vật (Cây xương rồng)
         let cactus = {
             x: 600,
-            y: 150, // Cùng độ cao với dino
-            width: 20,
-            height: 30
+            y: 115,
+            width: 24,
+            height: 46
         };
 
-        // Bắt sự kiện nhảy
-        document.addEventListener("keydown", function (event) {
-            if (event.code === "Space" && dino.grounded) {
-                jump();
-            }
-        });
-        document.addEventListener("touchstart", function () {
-            if (dino.grounded) jump();
-        });
+        // --- VẼ DINO (GOOGLE STYLE) ---
+        function drawDino(x, y, legFrame) {
+            ctx.fillStyle = "#535353"; // Màu xám đặc trưng
 
-        function jump() {
-            dino.dy = dino.jumpPower;
-            dino.grounded = false;
+            // 1. Vẽ Đầu
+            ctx.fillRect(x + 20, y, 20, 15);      // Hộp sọ
+            ctx.fillRect(x + 20, y + 15, 12, 5);  // Mõm dưới
+
+            // Mắt trắng
+            ctx.fillStyle = "#f7f7f7";
+            ctx.fillRect(x + 24, y + 4, 4, 4);
+            ctx.fillStyle = "#535353"; // Trả lại màu xám
+
+            // 2. Vẽ Thân
+            ctx.fillRect(x, y + 15, 25, 20);      // Thân chính
+            ctx.fillRect(x + 25, y + 20, 5, 8);   // Tay nhỏ
+
+            // 3. Vẽ Đuôi
+            ctx.fillRect(x - 5, y + 18, 5, 10);   // Gốc đuôi
+
+            // 4. Vẽ Chân (Hiệu ứng chạy)
+            if (dino.grounded) {
+                if (legFrame === 0) {
+                    // Chân trái bước
+                    ctx.fillRect(x + 5, y + 35, 5, 8);
+                    ctx.fillRect(x + 15, y + 35, 5, 5);
+                } else {
+                    // Chân phải bước
+                    ctx.fillRect(x + 5, y + 35, 5, 5);
+                    ctx.fillRect(x + 15, y + 35, 5, 8);
+                }
+            } else {
+                // Đang nhảy (co cả 2 chân)
+                ctx.fillRect(x + 5, y + 35, 5, 5);
+                ctx.fillRect(x + 15, y + 35, 5, 5);
+            }
         }
 
-        // --- VÒNG LẶP GAME ---
+        // --- VẼ XƯƠNG RỒNG ---
+        function drawCactus(x, y) {
+            ctx.fillStyle = "#535353";
+            // Thân chính
+            ctx.fillRect(x + 8, y, 8, 46);
+            // Nhánh trái
+            ctx.fillRect(x, y + 10, 4, 15);
+            ctx.fillRect(x, y + 22, 8, 4);
+            // Nhánh phải
+            ctx.fillRect(x + 16, y + 8, 4, 15);
+            ctx.fillRect(x + 16, y + 20, 8, 4);
+        }
+
+        // --- INPUT ---
+        function jump(e) {
+            if ((e.code === "Space" || e.code === "ArrowUp") && dino.grounded) {
+                dino.dy = dino.jumpPower;
+                dino.grounded = false;
+            }
+        }
+        document.addEventListener("keydown", jump);
+        document.addEventListener("touchstart", () => {
+            if (dino.grounded) { dino.dy = dino.jumpPower; dino.grounded = false; }
+        });
+
+        // --- GAME LOOP ---
         function update() {
             if (isGameOver) return;
-
             requestAnimationFrame(update);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Xử lý Khủng long
-            dino.dy += gravity; // Trọng lực kéo xuống
+            frame++; // Tăng biến đếm frame
+
+            // 1. Xử lý Dino
+            dino.dy += gravity;
             dino.y += dino.dy;
 
-            // Chạm đất
-            if (dino.y >= 150) {
-                dino.y = 150;
+            if (dino.y >= 110) {
+                dino.y = 110;
                 dino.dy = 0;
                 dino.grounded = true;
             }
 
-            // Vẽ Dino (Màu đen đơn giản)
-            ctx.fillStyle = "#333";
-            ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
-
-            // 2. Xử lý Xương rồng
-            cactus.x -= gameSpeed; // Di chuyển sang trái
-
-            // Nếu chạy hết màn hình thì quay lại
-            if (cactus.x + cactus.width < 0) {
-                cactus.x = canvas.width + Math.random() * 200; // Xuất hiện ngẫu nhiên xa hơn
-                score += 100; // Qua 1 cây được 100 điểm
-                gameSpeed += 0.2; // Tăng tốc độ dần dần
-                document.getElementById("scoreBoard").innerText = "Điểm: " + score;
+            // Đổi chân sau mỗi 10 frame (Tạo hiệu ứng chạy)
+            if (frame % 10 === 0) {
+                dino.legFrame = (dino.legFrame === 0) ? 1 : 0;
             }
 
-            // Vẽ Xương rồng (Màu đỏ)
-            ctx.fillStyle = "#c0392b";
-            ctx.fillRect(cactus.x, cactus.y, cactus.width, cactus.height);
+            drawDino(dino.x, dino.y, dino.legFrame);
 
-            // 3. Kiểm tra Va chạm (Chết)
+            // 2. Xử lý Xương rồng
+            cactus.x -= gameSpeed;
+            if (cactus.x + cactus.width < 0) {
+                cactus.x = canvas.width + Math.random() * 300;
+                score++;
+                gameSpeed += 0.1;
+                // Format điểm số 00123
+                document.getElementById("scoreBoard").innerText = "HI " + String(score).padStart(5, '0');
+            }
+
+            drawCactus(cactus.x, cactus.y);
+
+            // 3. Va chạm
             if (
-                dino.x < cactus.x + cactus.width &&
-                dino.x + dino.width > cactus.x &&
+                dino.x < cactus.x + cactus.width - 5 &&
+                dino.x + 30 > cactus.x + 5 &&
                 dino.y < cactus.y + cactus.height &&
-                dino.y + dino.height > cactus.y
+                dino.y + 35 > cactus.y
             ) {
-                // Va chạm!
                 isGameOver = true;
-                alert("GAME OVER! Điểm của bạn: " + score);
-                sendScoreToBackend(score);
+
+                // Vẽ chữ Game Over
+                ctx.fillStyle = "#535353";
+                ctx.font = "30px Courier New";
+                ctx.fillText("G A M E  O V E R", 180, 80);
+
+                sendScoreToBackend(score * 100);
             }
         }
 
-        // --- GỬI ĐIỂM VỀ JAVA ---
+        // --- GỬI ĐIỂM ---
         function sendScoreToBackend(finalScore) {
-            let data = {
-                "gameType": "dino",  // Quan trọng: Báo cho Java biết đây là game Dino
-                "score": finalScore,
-                "username": "NguoiChoi_Dino"
-            };
+            let data = { "gameType": "dino", "score": finalScore };
 
             fetch('/api/game/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             })
-                .then(response => response.text())
-                .then(message => {
-                    alert("Server Java nói: " + message);
-                    location.reload();
-                })
-                .catch((error) => console.error('Lỗi:', error));
+                .then(resp => resp.text())
+                .then(msg => {
+                    if (msg.includes("chưa đăng nhập")) alert("⚠️ " + msg);
+                    setTimeout(() => location.reload(), 1000); // Đợi 1s rồi reset
+                });
         }
 
-        // Bắt đầu chạy game
         update();
-
     </script>
 </body>
 
